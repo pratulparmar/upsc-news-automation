@@ -1,0 +1,509 @@
+{
+  "name": "UPSC News Automation - Advanced with AI",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "030e3f38-6444-40dd-a7d0-61ffb37b2626",
+      "name": "Daily at 6 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2272,
+        424
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.thehindu.com/news/national/feeder/default.rss",
+        "options": {}
+      },
+      "id": "0343bf09-e760-41fc-aef0-db49177a7d64",
+      "name": "Fetch The Hindu RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2048,
+        328
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "09ab90ee-4a6a-4396-9a7b-9f9bf9f0af27",
+      "name": "Parse XML",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        -1824,
+        328
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get AI response from OpenAI\nconst aiResponse = $input.first().json;\n\n// Get article data from Set node\nconst setData = $('Set').first().json;\n\n// Extract AI categorization from OpenAI response\nlet aiData;\n\nif (aiResponse.message && aiResponse.message.content) {\n  aiData = aiResponse.message.content;\n} else if (Array.isArray(aiResponse) && aiResponse[0] && aiResponse[0].message) {\n  aiData = aiResponse[0].message.content;\n} else {\n  throw new Error(\"Cannot find AI response\");\n}\n\n// Merge article data with AI categorization\nreturn [{\n  json: {\n    // Article data from Set node\n    title: setData.article_title,\n    link: setData.article_link,\n    description: setData.article_description,\n    pubDate: setData.article_pubDate,\n    source: setData.article_source,\n    category: setData.article_category,\n    \n    // AI categorization\n    upsc_category: aiData.category || \"UNKNOWN\",\n    is_relevant: aiData.is_relevant === true,\n    sub_topics: Array.isArray(aiData.sub_topics) ? aiData.sub_topics.join(', ') : '',\n    reasoning: aiData.reasoning || \"\",\n    \n    // Metadata\n    processed_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "8b0de473-e12f-488c-a22c-6d509b2898f7",
+      "name": "Merge AI Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_relevant }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "id": "dc9d3f16-be2f-4a57-a145-4b58e56b7131"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "11cb55a6-52b7-4dd1-9056-8487b9cccd18",
+      "name": "Filter UPSC Relevant",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        328
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "71ba8c15-764f-454c-9768-de4023b419f0",
+      "name": "All Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1152,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📰 UPSC News Automation System\n\n**Automated daily UPSC news curation delivered to Telegram.**\n\n### What It Does:\n- Fetches 200+ articles daily from The Hindu RSS feed (6:00 AM)\n- AI categorizes each article into GS1, GS2, GS3, or GS4 using OpenAI GPT\n- Filters to deliver only 40-60 UPSC-relevant articles\n- Sends formatted messages to your Telegram with links and reasoning\n- Saves 2+ hours of manual news collection daily\n\n### UPSC Categories:\n- **GS1:** History, Culture, Geography, Society\n- **GS2:** Polity, Governance, International Relations\n- **GS3:** Economy, Environment, Security, Technology\n- **GS4:** Ethics, Integrity, Aptitude\n\n### Requirements:\n1. **OpenAI API Key** - Add to n8n credentials\n2. **Telegram Bot** - Create via @BotFather, add token to credentials\n3. **Chat ID** - Get from @userinfobot, enter in Telegram nodes\n\n### Quick Setup:\n1. Add OpenAI and Telegram credentials\n2. Enter your Chat ID in Telegram nodes (2 nodes)\n3. Test with \"Execute Workflow\"\n4. Activate when ready\n\n**Result:** 40-60 relevant UPSC articles delivered to your phone daily, zero manual effort.\n\n---\n\n**Version 1.0** | Built for UPSC aspirants | MIT License",
+        "height": 500,
+        "width": 450
+      },
+      "id": "1e5956d9-c275-41fd-87ef-d658aa807994",
+      "name": "Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1952,
+        512
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2272,
+        232
+      ],
+      "id": "92879616-df12-43c2-a0f2-5b9c8e22f9dd",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract articles from RSS feed\nconst rssData = $input.first().json;\nconst articles = rssData.rss.channel.item;\n\n// Return each article as a separate item\nreturn articles.map(article => ({\n  json: article\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        328
+      ],
+      "id": "50017aad-4b77-499b-a38c-a242254683ee",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1376,
+        328
+      ],
+      "id": "bdeaf056-cbf3-4c0b-9708-a4759f9232ee",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5c2a6fc0-21b3-4661-9e3c-b64e5c79f801",
+              "name": "article_title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "6d6803c2-9437-4f9b-9ae4-3a2e072c8e8a",
+              "name": "article_link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "795bc7f1-7217-4bef-b282-4c3e8494e298",
+              "name": "article_description",
+              "value": "={{ $json.description }}",
+              "type": "string"
+            },
+            {
+              "id": "e41a076f-131f-46b8-9bd0-b8794f07fe6f",
+              "name": "article_pubDate",
+              "value": "={{ $json.pubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "f7ca663e-aacd-4eed-a45e-d7fe917fe639",
+              "name": "article_source",
+              "value": "=The Hindu",
+              "type": "string"
+            },
+            {
+              "id": "d0179efb-6e03-4ffe-82a4-46f2d1ff3634",
+              "name": "article_category",
+              "value": "={{ $json.category }}",
+              "type": "string"
+            },
+            {
+              "id": "c1ee36f6-3789-470d-8ab3-c6446999a581",
+              "name": "prompt_for_ai",
+              "value": "=Title: {{ $json.title }}\\nDescription: {{ $json.description || \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1152,
+        256
+      ],
+      "id": "637abfd0-6d1b-45ca-945a-01cf992000da",
+      "name": "Set"
+    },
+    {
+      "parameters": {
+        "chatId": "6014510822",
+        "text": "=📰 <b>UPSC News Update</b>\n══════════════════════════\n\n📌 <b>{{ $json.title }}</b>\n\n🏷️ Category: <b>{{ $json.upsc_category }}</b>\n📚 Topics: {{ $json.sub_topics }}\n📰 Source: {{ $json.source }}\n\n💡 <b>Why Relevant:</b>\n{{ $json.reasoning }}\n\n🔗 <a href=\"{{ $json.link }}\">Read Full Article</a>\n\n══════════════════════════",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        400
+      ],
+      "id": "3d53c9e6-5eda-4102-a19c-188255bbc698",
+      "name": "Answer Query a callback",
+      "webhookId": "bed33b9a-e98b-46c2-8ba5-c88582cb015b",
+      "credentials": {
+        "telegramApi": {
+          "id": "mVUYp5DmNS2uAUFU",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple completion message\nreturn [{\n  json: {\n    message: `✅ *UPSC News Workflow Completed*\\n\\n📅 ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\\n📰 Source: The Hindu RSS Feed\\n\\n✅ All articles have been processed and sent to your Telegram!\\n\\n💡 Check your messages above for today's UPSC news.`,\n    status: 'success'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        64
+      ],
+      "id": "0d1ec9c8-8a40-4879-8a84-520a5c6ea89b",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "chatId": "6014510822",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -576,
+        64
+      ],
+      "id": "1f2a720a-b814-43b8-a781-59003f222367",
+      "name": "Send a text message",
+      "webhookId": "eda57c99-8548-42c1-a5ea-b3b9f7ae423b",
+      "credentials": {
+        "telegramApi": {
+          "id": "mVUYp5DmNS2uAUFU",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert UPSC Civil Services examination coach. Your job is to identify ONLY genuinely exam-relevant news articles. Be SELECTIVE and STRICT.\n\nARTICLE TO ANALYZE:\nTitle: {{ $json.article_title }}\nDescription: {{ $json.article_description }}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nUPSC CATEGORIES:\n\n**GS1** - Indian Heritage, Culture, History, Society, Geography\n✅ INCLUDE: Major archaeological discoveries, significant social movements, demographic changes with policy impact, major geographical events\n❌ EXCLUDE: Individual cultural events, local festivals, routine heritage announcements\n\n**GS2** - Governance, Constitution, Polity, Social Justice, International Relations\n✅ INCLUDE: Supreme Court landmark judgments, new laws/bills, major government schemes, significant bilateral agreements, constitutional matters, electoral reforms\n❌ EXCLUDE: Routine ministerial visits, minor administrative changes, local governance issues, routine diplomatic courtesies\n\n**GS3** - Technology, Economy, Environment, Security, Disaster Management\n✅ INCLUDE: Budget/GDP/Economic policy changes, RBI monetary policy, major infrastructure projects, significant environmental policy, defense/security threats, major scientific breakthroughs\n❌ EXCLUDE: Minor economic data, routine corporate news, individual company results, small infrastructure updates, routine tech announcements\n\n**GS4** - Ethics, Integrity, Aptitude\n✅ INCLUDE: Major corruption cases, significant ethical dilemmas in governance, whistleblower cases of national importance\n❌ EXCLUDE: Minor misconduct cases, individual incidents without policy implications\n\n**NOT_RELEVANT** - Mark if article is:\n- Entertainment (movies, celebrities, awards, personal life)\n- Sports (match scores, player transfers, tournaments) unless major policy/infrastructure angle\n- Business routine (company earnings, mergers, individual appointments)\n- Local news without national significance\n- Routine appointments/transfers\n- Individual crime/accident stories\n- Technology product launches\n- Lifestyle, fashion, food articles\n- Opinion pieces without substantive policy discussion\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nSTRICT DECISION CRITERIA:\n\n**Mark as RELEVANT ONLY if:**\n\n1. **GOVERNMENT POLICY**: Announces new policy, scheme, or major reform\n   ✅ \"Budget 2026 announces tax reforms\"\n   ❌ \"Minister inaugurates building\"\n\n2. **LEGAL/CONSTITUTIONAL**: Supreme Court judgment on fundamental rights, new legislation\n   ✅ \"SC rules on privacy rights\"\n   ❌ \"Court grants bail to accused\"\n\n3. **ECONOMIC SIGNIFICANCE**: GDP, inflation, RBI policy, budget, major trade deals\n   ✅ \"GDP grows 7%, RBI revises forecast\"\n   ❌ \"Company Q3 profits rise 10%\"\n\n4. **INTERNATIONAL RELATIONS**: Major bilateral agreements, diplomatic crisis, multilateral summits\n   ✅ \"India-US sign defense agreement\"\n   ❌ \"Minister visits neighboring country\"\n\n5. **ENVIRONMENTAL POLICY**: Major climate policy, significant pollution/conservation measures\n   ✅ \"Government announces net-zero roadmap\"\n   ❌ \"NGO plants trees in city park\"\n\n6. **MAJOR INFRASTRUCTURE**: National highways, railways, ports of strategic importance\n   ✅ \"Delhi-Mumbai Expressway inaugurated\"\n   ❌ \"Local bridge repaired\"\n\n7. **SECURITY/DEFENSE**: Border conflicts, terrorism, cybersecurity threats, defense acquisitions\n   ✅ \"Cross-border tension escalates\"\n   ❌ \"Army conducts routine exercise\"\n\n8. **SOCIAL POLICY**: Education/health policy changes, welfare schemes, social justice measures\n   ✅ \"New education policy announced\"\n   ❌ \"School organizes annual function\"\n\n**CRITICAL RULE: Ask yourself - \"Would this likely appear in a UPSC question or be important for the exam?\"**\n\nIf answer is NO or UNSURE → Mark as NOT_RELEVANT\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nEXAMPLES OF WHAT TO EXCLUDE:\n\n❌ \"Actor wins award at film festival\" → NOT_RELEVANT\n❌ \"Cricket team wins match\" → NOT_RELEVANT  \n❌ \"Tech company launches new phone\" → NOT_RELEVANT\n❌ \"Celebrity wedding ceremony held\" → NOT_RELEVANT\n❌ \"Local theft incident reported\" → NOT_RELEVANT\n❌ \"Restaurant opens new branch\" → NOT_RELEVANT\n❌ \"Minister attends event\" (routine) → NOT_RELEVANT\n❌ \"Company announces quarterly results\" → NOT_RELEVANT\n❌ \"Individual appointed to corporate role\" → NOT_RELEVANT\n❌ \"Traffic jam on city highway\" → NOT_RELEVANT\n\nEXAMPLES OF WHAT TO INCLUDE:\n\n✅ \"Union Budget 2026 presented\" → GS3 (Economic policy)\n✅ \"Supreme Court strikes down sedition law\" → GS2 (Constitutional law)\n✅ \"India-China border talks fail\" → GS2 (International Relations)\n✅ \"RBI raises repo rate by 0.25%\" → GS3 (Monetary policy)\n✅ \"Women's reservation bill passed\" → GS2 (Social justice)\n✅ \"New environmental protection act\" → GS3 (Environment policy)\n✅ \"ISRO launches Mars mission\" → GS3 (Science & Technology)\n✅ \"Archaeological Survey finds ancient city\" → GS1 (History)\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nOUTPUT FORMAT:\n\nRespond with ONLY valid JSON (no markdown, no code blocks):\n\n{\n  \"category\": \"GS2\",\n  \"is_relevant\": true,\n  \"sub_topics\": [\"International Relations\", \"Defense\"],\n  \"reasoning\": \"Major bilateral defense agreement directly relevant to GS2 IR syllabus\"\n}\n\nIMPORTANT REMINDERS:\n- Be STRICT - only 20-30% of news should be UPSC relevant\n- When in doubt → Mark as NOT_RELEVANT\n- Routine news = NOT_RELEVANT\n- Must have clear UPSC exam connection to mark as relevant\n- Think: \"Would this help in answering a UPSC question?\""
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.3
+        }
+      },
+      "id": "8ec16095-221c-4305-bb8c-7605abee7701",
+      "name": "AI Categorization",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        -928,
+        256
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "RZMISeDB7MRTj1Ry",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {},
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Daily at 6 AM": {
+      "main": [
+        [
+          {
+            "node": "Fetch The Hindu RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch The Hindu RSS": {
+      "main": [
+        [
+          {
+            "node": "Parse XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse XML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge AI Results": {
+      "main": [
+        [
+          {
+            "node": "Filter UPSC Relevant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter UPSC Relevant": {
+      "main": [
+        [
+          {
+            "node": "Answer Query a callback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All Done": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Fetch The Hindu RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "All Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "AI Categorization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer Query a callback": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Categorization": {
+      "main": [
+        [
+          {
+            "node": "Merge AI Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "cf37d0d2-f253-4897-9ea3-0b6f31a98d57",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dde4823b9bb2e87154e5bf4940294a35e60edcd22688c75cec727fc1e0978f02"
+  },
+  "id": "sK_WOybKheOGmsybhPEt1",
+  "tags": [
+    {
+      "updatedAt": "2026-01-22T07:44:31.381Z",
+      "createdAt": "2026-01-22T07:44:31.381Z",
+      "id": "5taPRXrY9O4FPR51",
+      "name": "UPSC"
+    },
+    {
+      "updatedAt": "2026-01-22T07:44:31.335Z",
+      "createdAt": "2026-01-22T07:44:31.335Z",
+      "id": "g1DwdqiYAbtJiqp4",
+      "name": "AI"
+    }
+  ]
+}
