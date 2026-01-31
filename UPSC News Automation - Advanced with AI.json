@@ -221,7 +221,7 @@
     },
     {
       "parameters": {
-        "chatId": "6014510822",
+        "chatId": "YOUR_CHAT_ID_HERE",
         "text": "=📰 <b>UPSC News Update</b>\n══════════════════════════\n\n📌 <b>{{ $json.title }}</b>\n\n🏷️ Category: <b>{{ $json.upsc_category }}</b>\n📚 Topics: {{ $json.sub_topics }}\n📰 Source: {{ $json.source }}\n\n💡 <b>Why Relevant:</b>\n{{ $json.reasoning }}\n\n🔗 <a href=\"{{ $json.link }}\">Read Full Article</a>\n\n══════════════════════════",
         "additionalFields": {
           "parse_mode": "HTML"
@@ -258,7 +258,7 @@
     },
     {
       "parameters": {
-        "chatId": "6014510822",
+        "chatId": "YOUR_CHAT_ID_HERE",
         "text": "={{ $json.message }}",
         "additionalFields": {
           "parse_mode": "Markdown"
